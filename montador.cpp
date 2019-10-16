@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <vector>  /*Amor da minha vida*/
 
 using namespace std;
@@ -144,14 +145,20 @@ void directive_table_init() {
 
 // Função que abre o arquivo texto que vem da linha de comando
 void ioController(int argc, string fileName) {
-  if (argc < 1) {
-    cout << "até aqui oquei" << endl;
-  } else {
-    cout << "Erro: Por favor insira um arquivo =D" << endl;
-  }
+    cout << "[ioController] " << "até aqui oquei" << endl;
+    cout << "[ioController] " << "Nome do arquivo: " << fileName << endl;
+    cout << "[ioController] " << "Iniciando o Parsing do Arquivo" << endl;
+  
 }
 
 int main(int argc, char *argv[]) {
-  ioController(argc, argv[1]);
+  //Verifica se os argumentos foram passados
+  if (argc > 1) {
+    cout << "[main] " <<"Arquivo recebido, tentado abrir..." << endl;
+    ioController(argc, argv[1]);
+  } else {
+    cout << "[main] " << "Erro: Por favor insira um arquivo =D" << endl;
+    return -1;
+  }
   return 0;
 }
