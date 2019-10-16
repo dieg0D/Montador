@@ -117,3 +117,24 @@ de analise léxica, sintática e semântica e a etapa de geração de código ob
         Insere o valor do Símbolo no local indicado pelo elemento
     Encerra o programa
 ```
+
+Erros a serem identificados
+
+- [ ] declarações e rótulos ausentes;
+- [ ] declarações e rótulos repetidos;
+- [ ] pulo para rótulos inválidos;
+- [ ] pulo para seção errada;
+- [ ] diretivas inválidas;
+- [ ] instruções inválidas;
+- [ ] diretivas ou instruções na seção errada;
+- [ ] divisdão por zero (para constante);
+- [ ] instruções com a quantidade de operando inválida;
+- [ ] instruções com o tipo de operando inválido;
+- [ ] tokens inválidos;
+- [ ] dois rótulos na mesma linha;
+- [ ] seção TEXT faltante;
+- [ ] seção inválida;
+- [ ] tipo de argumento inválido;
+- [ ] modificação de um valor constante;
+- [ ] acessar posição ndão reservada pelo SPACE (exemplo accesar SPACE+4,
+      sendo que somente foi reservada uma posição)
