@@ -179,27 +179,13 @@ void symbolTableCheck(){
   
 }
 
-/*
-LABEL:  ADD   12, 4
-        SUB   2, N
-        STOP
-N:      SPACE
-[label, instruction, operator1, operator2]
-*/
-
-
-
 vector<string> tokeniza(string line){
   vector<string> tokens; //
   // ler a linha
   smatch sm;
   regex label_regex("(?:([[:alnum:]]+):\\s)?([A-Z]+)\\s?(-?(?:[[:alnum:]]|\\+|\\-)+)?(?:,(-?(?:[[:alnum:]]|\\+|\\-)+))?");
   regex_match(line, sm, label_regex);
-  /*
-  for (auto s : sm){
-    cout << s << endl;
-  }  
-  */  
+
   // pegar label
     // cout << "Label: " << sm[1] << endl;
     tokens.push_back(sm[1]);
@@ -231,13 +217,17 @@ int lineHasSymbol(string op1, string op2, int lineCount){
   int resultado = 0;
   for (auto c : op1){
     if(isalpha(c)){
-      resultado = 1;
+      if(isupper(c)){
+        resultado = 1;
+      }
       break;
     }
   }
   for (auto c : op2){
     if(isalpha(c)){
-      resultado += 2;
+      if(isupper(c)){
+        resultado += 2;
+      }
       break;
     }
   }
