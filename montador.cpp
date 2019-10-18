@@ -347,7 +347,9 @@ void preProcessor(string fileName) {
       "?:[[:alnum:]]|\\+|\\-)+))?.*");
 
   inputfile.open((fileName).c_str());
-  ofstream outfile("montador.pre");
+  int offset = fileName.length() - 3;
+  fileName.replace(offset, 3, "pre");
+  ofstream outfile(fileName);
   while (getline(inputfile, line)) {
     regex_match(line, sm, label_regex);
 
