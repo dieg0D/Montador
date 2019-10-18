@@ -64,7 +64,7 @@ de analise léxica, sintática e semântica e a etapa de geração de código ob
       Vai para PASSO_5
     Senão
       Analisa a label
-      Se (label definida)
+      Se (existe label na linha)
         Vai para PASSO_4
       Senão
         Vai para PASSO_2
@@ -127,7 +127,7 @@ Erros a serem identificados
 - [ ] diretivas inválidas;
 - [ ] instruções inválidas;
 - [ ] diretivas ou instruções na seção errada;
-- [ ] divisdão por zero (para constante);
+- [ ] divisão por zero (para constante);
 - [ ] instruções com a quantidade de operando inválida;
 - [ ] instruções com o tipo de operando inválido;
 - [ ] tokens inválidos;
@@ -136,5 +136,5 @@ Erros a serem identificados
 - [ ] seção inválida;
 - [ ] tipo de argumento inválido;
 - [ ] modificação de um valor constante;
-- [ ] acessar posição ndão reservada pelo SPACE (exemplo accesar SPACE+4,
+- [ ] acessar posição não reservada pelo SPACE (exemplo accesar SPACE+4,
       sendo que somente foi reservada uma posição)
