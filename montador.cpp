@@ -6,7 +6,6 @@
 #include <regex>
 #include <string>
 #include <vector> /*Amor da minha vida*/
-
 using namespace std;
 
 // Struct da tabela de instruções
@@ -43,7 +42,7 @@ fstream preFile;
 // apenas escreve o obj
 ofstream objFile;
 
-int positionCount = 0;
+int positionCount = 0, sectionTextLine = -1, sectionDataLine = -1;
 
 /*Inicializa a tabela de instruções*/
 void instruction_table_init() {
@@ -301,6 +300,7 @@ int searchSTForSymbol(string simbolo, int pos){
       addSymbolToTable(simbolo, pos);
     }
   }
+  return 0;
 }
 
 int addOrDefineLabelinTable(string name, int pos){
@@ -331,6 +331,18 @@ void singlePass(){
     cout << "--------------------------------------- " << endl;
     cout << "Linha " << lineCount << " : " << line << endl;
     tokens = tokeniza(line);
+
+    if(tokens.at(1) == "SECTION"){
+      if(tokens.at(2) == "TEXT"){
+        sectionTextLine = lineCount;
+      }else if(tokens.at(2) == "DATA"){
+        sectionDataLine = lineCount;
+      }else{
+        cout << "ERRO SEMANTICO: seção inválida!" << endl;
+        exit(-1);
+      }
+      continue;
+    }
 
     if (tokens.at(0) != "") {
       // cout << "TEM LABEL" << endl;
@@ -432,51 +444,275 @@ void singlePass(){
   symbolTableCheck();
 }
 
+vector<string> lineParsing(string line, ifstream *inputfile, int *line_count) {
+  vector<string> words, wordsAux;
+  string aux;
+  unsigned int i=0, j=0, finish=0, rotCount=0;
+  int size;
+  cout << "Linha: " << *line_count << endl;
+  while (finish == 0) {
+    while (i <= line.length()) { /*Le a linha toda*/
+      while (((line[i] == ' ') || (line[i] == '\t')) && (i < line.length())) { /*Remove espaços vazios*/
+        i++;
+      }
+
+
+      if (line[i] == ';') { /*Ignora comentarios*/
+        break;
+      }
+
+      if ((line[i] == '\0') && (aux == "")) { /*Ignora comentarios*/
+        break;
+      }
+
+      aux = aux + line[i];
+
+      if ((line[i+1] == ' ') || (line[i+1] == '\t') || (line[i+1] == '\n') || (i == line.length())) {
+        if ((wordsAux.size() == 0) && (aux.find(":") == string::npos)) {
+          wordsAux.push_back("none:");
+        }
+        if (aux[aux.length()-1] == '\0') {
+          aux.erase(aux.length()-1, aux.length()-1);
+        }
+        wordsAux.push_back(aux);
+        aux = "";
+        j=0;
+      }
+
+      j++;
+      i++;
+    }
+    if (wordsAux.size() == 0) {
+      break;
+    }
+    if ((wordsAux.size() != 1) && (wordsAux[0].find(":") != string::npos)) { /*Caso só tenha a label ele junta com a outra linha*/
+      finish = 1;
+    }
+    else {
+      getline(*inputfile, line);
+      transform(line.begin(), line.end(), line.begin(), ::toupper); /*Deixa toda a string maiuscula*/
+      i=0;
+      j=0;
+      *line_count = *line_count + 1;
+    }
+  }
+  
+  if (wordsAux.size() >= 2) {
+    words.push_back(wordsAux[0]);
+    words.push_back(wordsAux[1]);
+  }
+  for (i=2;i<wordsAux.size();i++) {
+    aux = wordsAux[i];
+    size = wordsAux[i].length()-1;
+    while ((wordsAux[i][size] != ',') && (i != wordsAux.size()-1)) {
+      aux = aux + " " + wordsAux[i+1];
+      i++;
+      size = wordsAux[i].length()-1;
+    }
+    words.push_back(aux);
+  }
+  
+
+  for (i=0;i<words.size();i++) { /*retira virgulas e dois pontos*/
+    size = words[i].length()-1;
+    if (words[i][size] == ':') {
+      rotCount++;
+    }
+    if ((words[i][size] == ':') || (words[i][size] == ',')) {
+      words[i].erase(size, size);
+    }
+  }
+  
+  if (rotCount >=2) {
+    cout << "ERRO SINTATICO: Dois rotulos para mesma instrução, linha: " << *line_count << endl;
+    //error = true;
+    exit(-1);
+  }
+  return words;
+}
+
 void preProcessor(string fileName) {
   ifstream inputfile;
   string line;
   map<string, int> EQUTable;
-  int flag = 0;
-  smatch sm;
-  regex label_regex(
-      "\\s*(?:([[:alnum:]]+:)\\s*)?([A-Z]+)\\s*(-?(?:[[:alnum:]]|\\+|\\-)+)?(?:"
-      ",(-"
-      "?("
-      "?:[[:alnum:]]|\\+|\\-)+))?.*");
-
+  int flag = 0, textSectionFound = 0,lineCount = 0, data_location = -1;
+  vector<string> sm;
+  vector<string> data_camp;
+  //smatch sm;
+  //regex label_regex("\\s*(?:((?:[[:alnum:]]|\\_)+):\\s*)?(?:((?:[[:alnum:]]|\\_)+):\\s*)*([A-Z]+)\\s*(-?(?:[[:alnum:]]|\\+|\\-|\\_)+)?(?:,(-?(?:[[:alnum:]]|\\+|\\-|\\_)+))?.*");
   inputfile.open((fileName).c_str());
   int offset = fileName.length() - 3;
   fileName.replace(offset, 3, "pre");
   ofstream outfile(fileName);
   while (getline(inputfile, line)) {
-    regex_match(line, sm, label_regex);
+    lineCount++;
+    for (int i=0; i < (int) line.length(); i++){
+      line[i] = toupper(line[i]);
+    }
+    //regex_match(line, sm, label_regex);
+    sm = lineParsing(line, &inputfile, &lineCount);
+    cout << "PARSEOIU" << endl;
+    if(sm.size() > 0){
+      cout << "TEM SM" << endl;
+    }else {
+      cout << "NÃO TEM SM" << endl;
+      //lineCount++;
+      continue;
+    }
+    for (string x : sm){
+      cout << x << " /  ";
+    }
+    cout << endl;
 
-    if (sm[2] == "EQU") {
+    if(sm[1] == "SECTION"){
+      if(sm[2] == "TEXT" ){
+        textSectionFound++;
+      }else if(sm[2] != "DATA" && sm[2] != "TEXT"){
+        cout << "ERRO : SEÇÃO INVALIDA!" << endl;
+        exit(-1);
+      }
+    }
+
+    if(sm[1] == "SECTION"){
+      if(sm[2] == "DATA"){
+        if(!textSectionFound){
+          // salva as parada na memoria, pq a DATA veio antes da TEXT
+          data_location = lineCount;
+          continue;
+        }
+      }
+    }
+    if(data_location > 0 && textSectionFound == 0){
+      continue;
+    }
+
+    if (sm[1] == "EQU") {
       EQUTable.insert(std::pair<string, int>(sm[1], stoi(sm[3])));
     }
-    if (sm[2] == "IF") {
+    
+
+    if (sm[1] == "IF") {
+      int hasEQU = 0; 
       for (auto it = EQUTable.begin(); it != EQUTable.end(); it++) {
         int num = it->first.find(":");
         string str = it->first;
         str = str.erase(num);
-        if (str == sm[3] && it->second == 0) {
+        if (str == sm[2] && it->second == 0) {
           flag = 1;
         }
+  
+        if(str == sm[2] ){
+          hasEQU = 1;
+        }
+      }
+      if(hasEQU == 0){
+        cout << "ERRO:  IF UTILIZANDO LABEL QUE NÃO FOI DECLARADA NO EQU!" << endl;
+      }else{
+        hasEQU = 0;
       }
     }
+    
 
-    if (flag == 0 && sm[2] != "EQU" && sm[2] != "IF") {
-      if (sm[1] != "") {
-        outfile << sm[1] << " ";
+    
+    if (sm[1] == "SECTION" && sm[2] == "DATA"){
+      cout << endl << "INICIO DA SECTION DATA!" << endl;
+      cout << (outfile.is_open() ? "ABERTO" : "FECHADO") << endl;
+      cout << "FLAG: " << flag << " / SM[1]: " << sm[1] << endl;
+    }
+
+    if (flag == 0 && sm[1] != "EQU" && sm[1] != "IF") {
+      // cout << "ENTROU NO IF" << endl;
+      if (sm[0] != "none") {
+        outfile << sm[0] << ": ";
       }
-      outfile << sm[2] << " " << sm[3] << " " << sm[4] << endl;
+      // cout << "TAMANHO DO SM: " << sm.size() << endl;
+      int n_tokens = (int) sm.size();
+      // for (int ix = 0; ix < n_tokens; ix++){
+      //   cout << "SM[" << ix << "]: " << sm[ix] << endl;
+      // }
+      
+      outfile << sm[1];
+      if (n_tokens > 2){
+        outfile << " " << sm[2];
+      }
+      if(n_tokens > 3){
+       outfile << "," << sm[3];
+      }
+      outfile << endl;
 
     } else {
-      if (sm[2] != "IF") {
+      // cout << "ENTROU NO ELSE" << endl;
+      if (sm[1] != "IF") {
+      // cout << "ENTROU NO ELSE IF" << endl;
         flag = 0;
       }
     }
+      // cout << "SAIU DO IF" << endl;
   }
+    
+
+  if(textSectionFound == 0){
+    cout << "ERRO : SEÇÃO TEXT FALTANDO!" << endl;
+  }else if(textSectionFound > 1){
+    cout << "ERRO : MAIS DE UMA SEÇÃO TEXT NO ARQUIVO!" << endl;
+  }
+
+  // SE DATA foi declarado antes do TEXT, manda bala
+  if(data_location > 0){
+    vector<string> sm;
+    int lineCount = 0;
+    string line;
+    // limpa a flag de EOF
+    inputfile.clear();
+    // Volta pro inicio do arquivo
+    inputfile.seekg(0, std::ios::beg);
+    // Vai até o "SECTION DATA"
+    for(int i = 0; i < data_location; i++){
+      getline(inputfile, line);
+      lineCount = i;
+    }
+    outfile << "SECTION DATA" << endl;
+    // Fica lendo até o "SECTION TEXT"
+    while(1){
+      getline(inputfile, line);
+      lineCount++;
+      // CAPSLOCKA a linha
+      for (int ix=0; ix < (int) line.length(); ix++){
+        line[ix] = toupper(line[ix]);
+      }
+      cout << "PARSEANDO A LINHA: " << lineCount << endl << endl;
+      sm = lineParsing(line, &inputfile, &lineCount);
+      cout << "PARSEOU" << endl;
+      int tokenCount = sm.size();
+      cout << "SMSIZE: " << sm.size() << endl;
+      if(tokenCount > 0){
+        cout << "TEM SM" << endl;
+        if(tokenCount > 2){
+          if(sm[1] == "SECTION" && sm[2] == "TEXT"){
+            break;
+          }
+        }
+        if (sm[0] != "none") {
+        outfile << sm[0] << ": ";
+        }
+        outfile << sm[1];
+        if (tokenCount > 2){
+          outfile << " " << sm[2];
+        }
+        if(tokenCount > 3){
+        outfile << "," << sm[3];
+        }
+        outfile << endl;
+
+      }else {
+        //cout << "NÃO TEM SM" << endl;
+        //lineCount++;
+        continue;
+      }
+    }
+  }
+
+  
   preFile.close();
   for (string s : assembled_lines){
     cout<< "oooopa   " << s;
@@ -485,7 +721,6 @@ void preProcessor(string fileName) {
   symbolTableCheck();
 
   outfile.close();
-
 }
 
 // Função que abre o arquivo texto que vem da linha de comando

@@ -48,11 +48,11 @@ de analise léxica, sintática e semântica e a etapa de geração de código ob
 
 #### Simulador:
 
-- [ ] Receber o programa de entrada
-- [ ] Identificar as instruções de INPUT e OUTPUT, exibindo o texto pedido
-- [ ] Identificar e executar as instruções
-- [ ] Exibir o conteúdo do acumulador ao executar uma instrução
-- [ ] Exibir o endereço e conteúdo de endereços modificados pela instrução
+- [x] Receber o programa de entrada
+- [x] Identificar as instruções de INPUT e OUTPUT, exibindo o texto pedido
+- [x] Identificar e executar as instruções
+- [x] Exibir o conteúdo do acumulador ao executar uma instrução
+- [x] Exibir o endereço e conteúdo de endereços modificados pela instrução
 
 ## Fluxo do montador
 
@@ -98,7 +98,6 @@ de analise léxica, sintática e semântica e a etapa de geração de código ob
   PASSO_5 // Análise da TS para encerrar o programa
     Analisa a tabela de símbolos
     Se todos os símbolos estão definidos
-      Encerra o programa com sucesso
       Vai para SUCESSO
     Senão
       Encerra o programa com Erro: "Símbolos não definidos!"
@@ -132,9 +131,9 @@ Erros a serem identificados
 - [ ] instruções com a quantidade de operando inválida;
 - [ ] instruções com o tipo de operando inválido;
 - [ ] tokens inválidos;
-- [ ] dois rótulos na mesma linha;
-- [ ] seção TEXT faltante;
-- [ ] seção inválida;
+- [x] dois rótulos na mesma linha;
+- [x] seção TEXT faltante;
+- [x] seção inválida;
 - [ ] tipo de argumento inválido;
 - [ ] modificação de um valor constante;
 - [ ] acessar posição não reservada pelo SPACE (exemplo accesar SPACE+4,
