@@ -35,8 +35,7 @@ vector<instruction> instruction_table; /*Tabela de instruções*/
 vector<directive> directive_table;     /*Tabela de diretivas*/
 vector<symbol> symbol_table;           /*Tabela de símbolos*/
 vector<string> assembled_lines;        /*Linhas montadas*/
-// apenas lê do asm
-ifstream asmFile;
+
 // lê e escreve o pre
 fstream preFile;
 // apenas escreve o obj
@@ -267,14 +266,17 @@ int lineHasSymbol(string op1, string op2, int lineCount) {
 // PASSO_6
 
 int addSymbolToTable(string name, int position){
+  cout << "ADICIONANDO O SIMBOLO " << name << " NA TABELA" << endl;
   vector<int> lista;
   lista.push_back(position);
   symbol s = {name, -1, false, lista};
+  symbol_table.push_back(s);
   return 0;
 }
 
 // PASSO_7
 int addEntryToSymbolOcurrenceList(string simbolo, int position){
+  cout << "ADICIONANDO POSICAO " << position << " NA LISTA DE " << simbolo << endl;
   for (symbol s : symbol_table){
     if (s.name == simbolo){
       s.list.push_back(position);
@@ -286,28 +288,40 @@ int addEntryToSymbolOcurrenceList(string simbolo, int position){
 
 int searchSTForSymbol(string simbolo, int pos){
   for (symbol s : symbol_table){
+    cout << simbolo << " <=>" << s.name << endl;
     if (s.name == simbolo){
-      cout << "TA NA TABELA JA " << endl;
+      cout << simbolo <<" TA NA TABELA JA " << endl;
       if (!s.defined){// Não ta definido
         // VAI PARA PASSO_7
         addEntryToSymbolOcurrenceList(simbolo,pos);
+      }else{
+        cout << "SIMBOLO TA NA TABELA, MAS NAO TA DEFINIDO" << endl;
       }
       // VAI PARA PASSO_3
       return 0;
-    }else{
-      cout << "NÃO TA NA TABELA AINDA " << endl;
-      // VAI PRO PASSO_6
-      addSymbolToTable(simbolo, pos);
     }
   }
+      cout << simbolo << " NÃO TA NA TABELA AINDA " << endl;
+      // VAI PRO PASSO_6
+      addSymbolToTable(simbolo, pos);
   return 0;
 }
 
 int addOrDefineLabelinTable(string name, int pos){
-  for (symbol s : symbol_table){
-    if (s.name == name){
-      s.value = pos;
-      s.defined = true;
+  // for (symbol s : symbol_table){
+  //   if (s.name == name){
+  //     cout << "Atualizando a label " << name << " Com o valor " << pos << " e definida como true" << endl;
+  //     s.value = pos;
+  //     s.defined = true;
+  //     return 0;
+  //   }
+  // }
+  int tam = symbol_table.size();
+  for (int k = 0; k < tam; k++){
+    if (symbol_table[k].name == name){
+      cout << "Atualizando a label " << name << " Com o valor " << pos << " e definida como true" << endl;
+      symbol_table[k].value = pos;
+      symbol_table[k].defined = true;
       return 0;
     }
   }
@@ -315,12 +329,13 @@ int addOrDefineLabelinTable(string name, int pos){
   list.push_back(-1);
   symbol s = {name, pos, true, list};
   //PASSO 4
+  cout << "Adicionando a label " << name << " Com o valor " << pos << " e definida como true" << endl;
   symbol_table.push_back(s);
   return 0;
 }
 
 void singlePass(){
-
+  vector<vector<string>> prelinhas;
   string line;
   vector<string> tokens;
   int lineCount = 0, labelDefined = 0;
@@ -352,7 +367,7 @@ void singlePass(){
         getchar();
         exit(-1);
       }
-
+      
       addOrDefineLabelinTable(tokens.at(0), positionCount);
     }else{
       //cout << "NÃO TEM LABEL" << endl;
@@ -377,6 +392,18 @@ void singlePass(){
 
         if (d.operands == val){
           int symbolFlag = lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
+          // PASSO_3
+          // Montagem da linha
+
+          prelinhas.push_back(tokens);
+          
+          cout << "Estamos no Passo 3" << endl;
+          for (auto linha : prelinhas){
+            for (auto l : linha){
+              cout << l << " ";
+            }
+            cout << endl;
+          }
 
           switch (symbolFlag){
             case 0:
@@ -399,14 +426,13 @@ void singlePass(){
             default:
               break;
           }
+          cout << "SAIU DO SWITCH" << endl;
 
-          // PASSO_3
-          // Montagem da linha
-          string linhaMontada;
+          // TRANSFORMAR A STRING BONITA EM NUMERIACA
+          //string linhaMontada;
+          //linhaMontada = lineCount + ": " + tokens.at(1) + " \n";
 
-          linhaMontada = lineCount + ": " + tokens.at(1) + " \n";
-
-          assembled_lines.push_back(linhaMontada);
+          //assembled_lines.push_back(linhaMontada);
 
         }else {
 
@@ -428,7 +454,43 @@ void singlePass(){
 
           cout << tokens.at(2) << "    " << tokens.at(3) << endl;
           if (i.operands == val) {
-            lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
+            int symbolFlag = lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
+          // PASSO_3
+          // Montagem da linha
+
+          prelinhas.push_back(tokens);
+          
+          cout << "Estamos no Passo 3" << endl;
+          for (auto linha : prelinhas){
+            for (auto l : linha){
+              cout << l << " ";
+            }
+            cout << endl;
+          }
+
+          switch (symbolFlag){
+            case 0:
+              // Monta a linha [?]
+              positionCount++;
+              break;
+            case 1:
+              searchSTForSymbol(tokens.at(2), positionCount + 1);
+              positionCount+=2;
+              break;
+            case 2:
+              searchSTForSymbol(tokens.at(3), positionCount + 2);
+              positionCount+=2;
+              break;
+            case 3:
+              searchSTForSymbol(tokens.at(2), positionCount + 1);
+              searchSTForSymbol(tokens.at(3), positionCount + 2);
+              positionCount+=3;
+              break;
+            default:
+              break;
+          }
+          cout << "SAIU DO SWITCH" << endl;
+
           } else {
             cout << "ERRO : Nº DE OPERANDOS ERRADO!" << endl;
             getchar();
@@ -730,11 +792,11 @@ void ioController(int argc, string fileName) {
        << "até aqui oquei" << endl;
   cout << "[ioController] "
        << "Nome do arquivo: " << fileName << endl;
-  asmFile.open(fileName.c_str(), ios::in);
+  
   fileName.replace(offset, 3, "pre");
   cout << fileName << endl;
   preFile.open(fileName.c_str(), ios::out | ios::in);
-  asmFile.close();
+  
 }
 
 int main(int argc, char *argv[]) {
@@ -742,6 +804,7 @@ int main(int argc, char *argv[]) {
   if (argc > 1) {
     cout << "[main] "
          << "Arquivo recebido, tentado abrir..." << endl;
+    preProcessor(argv[1]);
     ioController(argc, argv[1]);
     cout << "[main] "
          << "Inicializando a tabela de instruções..." << endl;
@@ -749,8 +812,7 @@ int main(int argc, char *argv[]) {
     cout << "[main] "
          << "Inicializando a tabela de diretivas..." << endl;
     directive_table_init();
-    preProcessor(argv[1]);
-    // singlePass();
+    singlePass();
   } else {
     cout << "[main] "
          << "ERRO SEMANTICO: O programa precisa de 1 argumento. Por favor "
