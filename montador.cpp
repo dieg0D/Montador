@@ -1,10 +1,11 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <regex>
-#include <vector>  /*Amor da minha vida*/
-#include <cstdlib>
 #include <cctype>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <regex>
+#include <string>
+#include <vector> /*Amor da minha vida*/
 
 using namespace std;
 
@@ -30,8 +31,6 @@ typedef struct symbol {
   bool defined;
   vector<int> list;
 } symbol;
-
-
 
 vector<instruction> instruction_table; /*Tabela de instruções*/
 vector<directive> directive_table;     /*Tabela de diretivas*/
@@ -163,24 +162,28 @@ void directive_table_init() {
   directive.length = 0;
   directive.operands = 1;
   directive_table.push_back(directive);
-
 }
 
-// SUCESSO
-void symbolTableCheck(){
- 
-  // percorre toda a tabela de símbolos e se tiver algum undefined, encerra com erro
-  for (symbol s : symbol_table){
-      cout << "[symbolTableCheck] " << "Símbolo " << s.name << "  " << s.value << (s.defined ? " T " : " F ") << endl;
 
-    if (s.defined == false){
-      cout << "[symbolTableCheck] " << "ERRO SEMANTICO: Símbolo " << s.name << " não definido" << endl;
+// SUCESSO
+void symbolTableCheck() {
+  // percorre toda a tabela de símbolos e se tiver algum undefined, encerra com
+  // erro
+  for (symbol s : symbol_table) {
+    cout << "[symbolTableCheck] "
+         << "Símbolo " << s.name << "  " << s.value
+         << (s.defined ? " T " : " F ") << endl;
+
+    if (s.defined == false) {
+      cout << "[symbolTableCheck] "
+           << "ERRO SEMANTICO: Símbolo " << s.name << " não definido" << endl;
+
       getchar();
       exit(-1);
     }
   }
-  
 }
+
 
 // TODO
 // Funcao que checa se:
@@ -194,28 +197,29 @@ vector<string> tokeniza(string line){
   // ler a linha
   smatch sm;
   regex label_regex("(?:((?:[[:alnum:]]|\\_)+):\\s)?([A-Z]+)\\s?(-?(?:[[:alnum:]]|\\+|\\-|\\_)+)?(?:,(-?(?:[[:alnum:]]|\\+|\\-|\\_)+))?");
+
   regex_match(line, sm, label_regex);
 
   // pegar label
-    // cout << "Label: " << sm[1] << endl;
-    tokens.push_back(sm[1]);
+  // cout << "Label: " << sm[1] << endl;
+  tokens.push_back(sm[1]);
   // pegar instruction
-    // cout << "Instr: " << sm[2] << endl;
-    tokens.push_back(sm[2]);
+  // cout << "Instr: " << sm[2] << endl;
+  tokens.push_back(sm[2]);
   // pegar operator1
-    // cout << "OPER1: " << sm[3] << endl;
-    tokens.push_back(sm[3]);
+  // cout << "OPER1: " << sm[3] << endl;
+  tokens.push_back(sm[3]);
   // pegar operator2
-    // cout << "OPER2: " << sm[4] << endl;
-    tokens.push_back(sm[4]);
+  // cout << "OPER2: " << sm[4] << endl;
+  tokens.push_back(sm[4]);
   return tokens;
 }
 
 // APENAS PARA LABEL
-int checkLabelInTable(string label){
-  for (symbol s : symbol_table){
-    if (s.name == label){
-      if (s.defined == true){
+int checkLabelInTable(string label) {
+  for (symbol s : symbol_table) {
+    if (s.name == label) {
+      if (s.defined == true) {
         return 1;
       }
     }
@@ -223,25 +227,25 @@ int checkLabelInTable(string label){
   return 0;
 }
 
-int lineHasSymbol(string op1, string op2, int lineCount){
+int lineHasSymbol(string op1, string op2, int lineCount) {
   int resultado = 0;
-  for (auto c : op1){
-    if(isalpha(c)){
-      if(isupper(c)){
+  for (auto c : op1) {
+    if (isalpha(c)) {
+      if (isupper(c)) {
         resultado = 1;
       }
       break;
     }
   }
-  for (auto c : op2){
-    if(isalpha(c)){
-      if(isupper(c)){
+  for (auto c : op2) {
+    if (isalpha(c)) {
+      if (isupper(c)) {
         resultado += 2;
       }
       break;
     }
   }
-  switch (resultado){
+  switch (resultado) {
     case 0:
       cout << "SEM SIMBOLOS NA LINHA " << lineCount << endl;
       break;
@@ -259,6 +263,7 @@ int lineHasSymbol(string op1, string op2, int lineCount){
   }
   return resultado;
 }
+
 
 // PASSO_6
 
@@ -315,10 +320,11 @@ int addOrDefineLabelinTable(string name, int pos){
 }
 
 void singlePass(){
+
   string line;
   vector<string> tokens;
   int lineCount = 0, labelDefined = 0;
-  while(!preFile.eof()){
+  while (!preFile.eof()) {
     int instrType = 0;
     getline(preFile, line);
     lineCount++;
@@ -326,36 +332,37 @@ void singlePass(){
     cout << "Linha " << lineCount << " : " << line << endl;
     tokens = tokeniza(line);
 
-    if (tokens.at(0) != ""){
-      //cout << "TEM LABEL" << endl;
+    if (tokens.at(0) != "") {
+      // cout << "TEM LABEL" << endl;
       labelDefined = checkLabelInTable(tokens.at(0));
-      if (labelDefined){
+      if (labelDefined) {
         cout << "LABEL JÁ DEFINIDA!" << endl;
         getchar();
         exit(-1);
       }
 
       addOrDefineLabelinTable(tokens.at(0), positionCount);
-
     }else{
       //cout << "NÃO TEM LABEL" << endl;
     }
-    //PASSO 2
+    // PASSO 2
     // Confere se o numero de operandos está correto
-    for (directive d : directive_table){
-      if (d.name == tokens.at(1)){
+    for (directive d : directive_table) {
+      if (d.name == tokens.at(1)) {
         cout << "É DIRETIVA! " << d.operands << endl;
-        int val=0;
-        val = tokens.at(2) == "" ? val : val+1;
-        val = tokens.at(3) == "" ? val : val+1;
-        if ((d.name == "SPACE")&&(val == 0)){
+        int val = 0;
+        val = tokens.at(2) == "" ? val : val + 1;
+        val = tokens.at(3) == "" ? val : val + 1;
+        if ((d.name == "SPACE") && (val == 0)) {
           /**
            * SPACE pode receber 0 ou 1 operandos, na tabela registramos 1
-           * Para que a verificação seja correta, quando o valor for 0, mudamos para 1
-           */ 
+           * Para que a verificação seja correta, quando o valor for 0, mudamos
+           * para 1
+           */
           val = 1;
         }
         cout << tokens.at(2) << "    " << tokens.at(3) << endl;
+
         if (d.operands == val){
           int symbolFlag = lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
 
@@ -390,6 +397,7 @@ void singlePass(){
           assembled_lines.push_back(linhaMontada);
 
         }else {
+
           cout << "ERRO : Nº DE OPERANDOS ERRADO!" << endl;
           exit(-1);
           getchar();
@@ -398,65 +406,121 @@ void singlePass(){
         break;
       }
     }
-    if (!instrType){
-      for(instruction i : instruction_table){
-        if (i.name == tokens.at(1)){
+    if (!instrType) {
+      for (instruction i : instruction_table) {
+        if (i.name == tokens.at(1)) {
           cout << "É INSTRUÇÃO! " << i.operands << endl;
-            int val=0;
-            val = tokens.at(2) == "" ? val : val+1;
-            val = tokens.at(3) == "" ? val : val+1;
-            
-            cout << tokens.at(2) << "    " << tokens.at(3) << endl;
-            if (i.operands == val){
-              lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
-            }else {
-              cout << "ERRO : Nº DE OPERANDOS ERRADO!" << endl;
-              exit(-1);
-              getchar();
-            }
+          int val = 0;
+          val = tokens.at(2) == "" ? val : val + 1;
+          val = tokens.at(3) == "" ? val : val + 1;
+
+          cout << tokens.at(2) << "    " << tokens.at(3) << endl;
+          if (i.operands == val) {
+            lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
+          } else {
+            cout << "ERRO : Nº DE OPERANDOS ERRADO!" << endl;
+            getchar();
+            exit(-1);
+          }
+
           break;
         }
       }
     }
-
-
-
   }
   preFile.close();
-  
+  symbolTableCheck();
+}
 
+void preProcessor(string fileName) {
+  ifstream inputfile;
+  string line;
+  map<string, int> EQUTable;
+  int flag = 0;
+  smatch sm;
+  regex label_regex(
+      "\\s*(?:([[:alnum:]]+:)\\s*)?([A-Z]+)\\s*(-?(?:[[:alnum:]]|\\+|\\-)+)?(?:"
+      ",(-"
+      "?("
+      "?:[[:alnum:]]|\\+|\\-)+))?.*");
+
+  inputfile.open((fileName).c_str());
+  int offset = fileName.length() - 3;
+  fileName.replace(offset, 3, "pre");
+  ofstream outfile(fileName);
+  while (getline(inputfile, line)) {
+    regex_match(line, sm, label_regex);
+
+    if (sm[2] == "EQU") {
+      EQUTable.insert(std::pair<string, int>(sm[1], stoi(sm[3])));
+    }
+    if (sm[2] == "IF") {
+      for (auto it = EQUTable.begin(); it != EQUTable.end(); it++) {
+        int num = it->first.find(":");
+        string str = it->first;
+        str = str.erase(num);
+        if (str == sm[3] && it->second == 0) {
+          flag = 1;
+        }
+      }
+    }
+
+    if (flag == 0 && sm[2] != "EQU" && sm[2] != "IF") {
+      if (sm[1] != "") {
+        outfile << sm[1] << " ";
+      }
+      outfile << sm[2] << " " << sm[3] << " " << sm[4] << endl;
+
+    } else {
+      if (sm[2] != "IF") {
+        flag = 0;
+      }
+    }
+  }
+  preFile.close();
   for (string s : assembled_lines){
     cout<< "oooopa   " << s;
   }
 
   symbolTableCheck();
+
+  outfile.close();
+
 }
 
 // Função que abre o arquivo texto que vem da linha de comando
 void ioController(int argc, string fileName) {
-    int offset = fileName.length() - 3;
-    cout << "[ioController] " << "até aqui oquei" << endl;
-    cout << "[ioController] " << "Nome do arquivo: " << fileName << endl;
-    asmFile.open(fileName.c_str(), ios::in);
-    fileName.replace(offset, 3, "pre");
-    cout << fileName << endl;
-    preFile.open(fileName.c_str(), ios::out | ios::in);
-    asmFile.close();        
+  int offset = fileName.length() - 3;
+  cout << "[ioController] "
+       << "até aqui oquei" << endl;
+  cout << "[ioController] "
+       << "Nome do arquivo: " << fileName << endl;
+  asmFile.open(fileName.c_str(), ios::in);
+  fileName.replace(offset, 3, "pre");
+  cout << fileName << endl;
+  preFile.open(fileName.c_str(), ios::out | ios::in);
+  asmFile.close();
 }
 
 int main(int argc, char *argv[]) {
-  //Verifica se os argumentos foram passados
+  // Verifica se os argumentos foram passados
   if (argc > 1) {
-    cout << "[main] " <<"Arquivo recebido, tentado abrir..." << endl;
+    cout << "[main] "
+         << "Arquivo recebido, tentado abrir..." << endl;
     ioController(argc, argv[1]);
-    cout << "[main] " <<"Inicializando a tabela de instruções..." << endl;
+    cout << "[main] "
+         << "Inicializando a tabela de instruções..." << endl;
     instruction_table_init();
-    cout << "[main] " <<"Inicializando a tabela de diretivas..." << endl;
+    cout << "[main] "
+         << "Inicializando a tabela de diretivas..." << endl;
     directive_table_init();
-
-    singlePass();
+    preProcessor(argv[1]);
+    // singlePass();
   } else {
-    cout << "[main] " << "ERRO SEMANTICO: O programa precisa de 1 argumento. Por favor insira um arquivo =D" << endl;
+    cout << "[main] "
+         << "ERRO SEMANTICO: O programa precisa de 1 argumento. Por favor "
+            "insira um arquivo =D"
+         << endl;
     return -1;
   }
   return 0;

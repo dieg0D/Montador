@@ -6,3 +6,4 @@ clear:
 	rm *.obj
 	rm *.e
 	rm *.pre
+
