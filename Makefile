@@ -1,5 +1,5 @@
 montador:
-	g++ -std=c++11 -ansi -Wall -o montador montador.cpp
+	g++ -std=c++11 -Wall -o montador montador.cpp
 
 clear:
 	rm montador
