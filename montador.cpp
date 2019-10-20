@@ -1,7 +1,9 @@
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <iostream>
+ #include <iomanip>
 #include <map>
 #include <regex>
 #include <string>
@@ -26,7 +28,7 @@ typedef struct directive {
 // Struct da tabela de símbolos
 typedef struct symbol {
   string name;
-  int value;
+  vector<int> value;
   bool defined;
   vector<int> list;
 } symbol;
@@ -163,13 +165,31 @@ void directive_table_init() {
 }
 
 
+int tokenErrors(string label){
+  if(isdigit(label[0])){
+    cout << "ERRO LEXICO: Identificadores não podem começar com números!" << endl;
+    exit(-1);
+  }
+  if((int) label.size() > 50){
+    cout << "ERRO LEXICO: Identificadore não podem ter mais de 50 caracteres!" << endl;
+    exit(-1);
+  }
+  for (char c : label){
+    if(!isalpha(c) && !(c == '_')){
+      cout << "ERRO LEXICO: Caracteres não permitidos no identificador!" << endl;
+      exit(-1);
+    }
+  }
+  return 0;
+}
+
 // SUCESSO
 void symbolTableCheck() {
   // percorre toda a tabela de símbolos e se tiver algum undefined, encerra com
   // erro
   for (symbol s : symbol_table) {
     cout << "[symbolTableCheck] "
-         << "Símbolo " << s.name << "  " << s.value
+         << "Símbolo " << s.name << "  " << s.value.front()
          << (s.defined ? " T " : " F ") << endl;
 
     if (s.defined == false) {
@@ -267,9 +287,10 @@ int lineHasSymbol(string op1, string op2, int lineCount) {
 
 int addSymbolToTable(string name, int position){
   cout << "ADICIONANDO O SIMBOLO " << name << " NA TABELA" << endl;
-  vector<int> lista;
+  vector<int> lista, valor;
+  valor.push_back(-1);
   lista.push_back(position);
-  symbol s = {name, -1, false, lista};
+  symbol s = {name, valor, false, lista};
   symbol_table.push_back(s);
   return 0;
 }
@@ -286,7 +307,46 @@ int addEntryToSymbolOcurrenceList(string simbolo, int position){
   return -1;
 }
 
+int addUpdateVectorToST(string simbolo, int pos){
+  string name;
+  int offset;
+  string buff{""};
+  for(auto s : simbolo)
+	{
+		if(s != '+') buff+=s; else
+		if(s == '+' && buff != "") { name =buff; buff = ""; }
+	}
+	if(buff != "") offset = stoi(buff);
+
+  int i, symbolCount = symbol_table.size();
+  for (i=0; i<symbolCount; i++){
+    if(name == symbol_table[i].name){
+      symbol_table[i].value[offset] = pos;
+      return 0;
+    }
+  }
+  vector<int> val, list;
+  val.push_back(pos);
+  list.push_back(-1);
+  symbol sim = {name,val , false,list};
+  return 0;
+}
+
 int searchSTForSymbol(string simbolo, int pos){
+  int is_vector = 0;
+  for (auto x : simbolo){
+    if(x == '+'){
+      is_vector++;
+    }
+  }
+  if (is_vector > 1){
+    cout << "ERRO LEXICO: TOKEN INVALIDO!" << endl;
+    exit(-1);
+  }else if(is_vector > 0){
+    addUpdateVectorToST(simbolo, pos);
+    return 0;
+  }
+
   for (symbol s : symbol_table){
     cout << simbolo << " <=>" << s.name << endl;
     if (s.name == simbolo){
@@ -295,39 +355,42 @@ int searchSTForSymbol(string simbolo, int pos){
         // VAI PARA PASSO_7
         addEntryToSymbolOcurrenceList(simbolo,pos);
       }else{
-        cout << "SIMBOLO TA NA TABELA, MAS NAO TA DEFINIDO" << endl;
+        cout << "SIMBOLO TA NA TABELA, E TA DEFINIDO" << endl;
       }
       // VAI PARA PASSO_3
       return 0;
     }
   }
-      cout << simbolo << " NÃO TA NA TABELA AINDA " << endl;
-      // VAI PRO PASSO_6
-      addSymbolToTable(simbolo, pos);
+  cout << simbolo << " NÃO TA NA TABELA AINDA " << endl;
+  // VAI PRO PASSO_6
+  addSymbolToTable(simbolo, pos);
   return 0;
 }
 
+string consulST(string name){
+  for(auto symb : symbol_table){
+    if(symb.name == name){
+      return to_string(symb.value.front());
+    }
+  }
+  return name;
+}
+
 int addOrDefineLabelinTable(string name, int pos){
-  // for (symbol s : symbol_table){
-  //   if (s.name == name){
-  //     cout << "Atualizando a label " << name << " Com o valor " << pos << " e definida como true" << endl;
-  //     s.value = pos;
-  //     s.defined = true;
-  //     return 0;
-  //   }
-  // }
+  
   int tam = symbol_table.size();
   for (int k = 0; k < tam; k++){
     if (symbol_table[k].name == name){
       cout << "Atualizando a label " << name << " Com o valor " << pos << " e definida como true" << endl;
-      symbol_table[k].value = pos;
+      symbol_table[k].value.front() = pos;
       symbol_table[k].defined = true;
       return 0;
     }
   }
-  vector<int> list;
+  vector<int> list, valor;
+  valor.push_back(pos);
   list.push_back(-1);
-  symbol s = {name, pos, true, list};
+  symbol s = {name, valor, true, list};
   //PASSO 4
   cout << "Adicionando a label " << name << " Com o valor " << pos << " e definida como true" << endl;
   symbol_table.push_back(s);
@@ -391,42 +454,87 @@ void singlePass(){
         cout << tokens.at(2) << "    " << tokens.at(3) << endl;
 
         if (d.operands == val){
-          int symbolFlag = lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
-          // PASSO_3
-          // Montagem da linha
 
-          prelinhas.push_back(tokens);
-          
-          cout << "Estamos no Passo 3" << endl;
-          for (auto linha : prelinhas){
-            for (auto l : linha){
-              cout << l << " ";
+          vector<string> lili;
+          if(tokens.at(1) == "SPACE"){
+            searchSTForSymbol(tokens.at(0), positionCount + 1);
+                  
+            if ( tokens.at(2) != ""){
+              //vetor
+              string aaa = tokens.at(2);
+              int max = stoi(aaa.c_str());
+              for (int n = 0; n < max; n++){
+                lili.push_back("0");
+                }
+            }else{
+              lili.push_back("0");
+              //1espaco
             }
-            cout << endl;
+            prelinhas.push_back(lili);
+          }else if(tokens.at(1) == "CONST"){
+            searchSTForSymbol(tokens.at(0), positionCount + 1);
+            positionCount+=2;
+            if(tokens.at(2) == ""){
+              cout << "ERRO SINTATICO: QUANTIDADE DE OPERANDOS INVÁLIDA!" << endl;
+              exit(-1);
+            } 
+            
+            regex caraio("(-)?(0X)?([[:digit:]]+)$");
+            smatch tinder;
+            regex_match(tokens.at(2), tinder, caraio);
+                  
+            std::istringstream converter(tinder[3]);
+            int value;
+            converter >> std::hex >> value;
+            
+            if(tinder[1] == "-"){
+              value = value * -1;
+            }
+
+            lili.push_back(to_string(value));
+            prelinhas.push_back(lili);
+          }else {
+            cout << "ERRO SEMANTICO: DIRETIVA INVÁLIDA!" << endl;
+            exit(-1);
           }
 
-          switch (symbolFlag){
-            case 0:
-              // Monta a linha [?]
-              positionCount++;
-              break;
-            case 1:
-              searchSTForSymbol(tokens.at(2), positionCount + 1);
-              positionCount+=2;
-              break;
-            case 2:
-              searchSTForSymbol(tokens.at(3), positionCount + 2);
-              positionCount+=2;
-              break;
-            case 3:
-              searchSTForSymbol(tokens.at(2), positionCount + 1);
-              searchSTForSymbol(tokens.at(3), positionCount + 2);
-              positionCount+=3;
-              break;
-            default:
-              break;
-          }
-          cout << "SAIU DO SWITCH" << endl;
+
+          // int symbolFlag = lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
+          // // PASSO_3
+          // // Montagem da linha
+
+          // prelinhas.push_back(tokens);
+          
+          // cout << "Estamos no Passo 3" << endl;
+          // for (auto linha : prelinhas){
+          //   for (auto l : linha){
+          //     cout << l << " ";
+          //   }
+          //   cout << endl;
+          // }
+
+          // switch (symbolFlag){
+          //   case 0:
+          //     // Monta a linha [?]
+          //     positionCount++;
+          //     break;
+          //   case 1:
+          //     searchSTForSymbol(tokens.at(2), positionCount + 1);
+          //     positionCount+=2;
+          //     break;
+          //   case 2:
+          //     searchSTForSymbol(tokens.at(3), positionCount + 2);
+          //     positionCount+=2;
+          //     break;
+          //   case 3:
+          //     searchSTForSymbol(tokens.at(2), positionCount + 1);
+          //     searchSTForSymbol(tokens.at(3), positionCount + 2);
+          //     positionCount+=3;
+          //     break;
+          //   default:
+          //     break;
+          // }
+          // cout << "SAIU DO SWITCH" << endl;
 
           // TRANSFORMAR A STRING BONITA EM NUMERIACA
           //string linhaMontada;
@@ -457,8 +565,6 @@ void singlePass(){
             int symbolFlag = lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
           // PASSO_3
           // Montagem da linha
-
-          prelinhas.push_back(tokens);
           
           cout << "Estamos no Passo 3" << endl;
           for (auto linha : prelinhas){
@@ -467,30 +573,83 @@ void singlePass(){
             }
             cout << endl;
           }
-
+          vector<string> lolo;
+          int opio;
+          string valeu;
           switch (symbolFlag){
             case 0:
-              // Monta a linha [?]
+              // CASO STOP
+              for(auto inst : instruction_table){
+                if(inst.name == tokens.at(1)){
+                  opio = inst.opcode;
+                }
+              }
+              lolo.push_back(to_string(opio));
               positionCount++;
               break;
             case 1:
               searchSTForSymbol(tokens.at(2), positionCount + 1);
+              for(auto inst : instruction_table){
+                if(inst.name == tokens.at(1)){
+                  opio = inst.opcode;
+                }
+              }
+              lolo.push_back(to_string(opio));
+              for(auto sy : symbol_table){
+                if(sy.name == tokens.at(2)){
+                  valeu = sy.name;
+                }
+              }
+              lolo.push_back(valeu);
               positionCount+=2;
               break;
             case 2:
               searchSTForSymbol(tokens.at(3), positionCount + 2);
-              positionCount+=2;
+              for(auto inst : instruction_table){
+                if(inst.name == tokens.at(1)){
+                  opio = inst.opcode;
+                }
+              }
+              lolo.push_back(to_string(opio));
+              for(auto sy : symbol_table){
+                if(sy.name == tokens.at(3)){
+                  valeu = sy.name;
+                }
+              }
+              lolo.push_back(valeu);
+              positionCount+=3;
               break;
             case 3:
               searchSTForSymbol(tokens.at(2), positionCount + 1);
               searchSTForSymbol(tokens.at(3), positionCount + 2);
+              
+              for(auto inst : instruction_table){
+                if(inst.name == tokens.at(1)){
+                  opio = inst.opcode;
+                }
+              }
+              lolo.push_back(to_string(opio));
+              for(auto sy : symbol_table){
+                if(sy.name == tokens.at(2)){
+                  valeu = sy.name;
+                }
+              }
+              lolo.push_back(valeu);
+            
+              for(auto sy : symbol_table){
+                if(sy.name == tokens.at(3)){
+                  valeu = sy.name;
+                }
+              }
+              
+              lolo.push_back(valeu);
               positionCount+=3;
               break;
             default:
               break;
           }
           cout << "SAIU DO SWITCH" << endl;
-
+          prelinhas.push_back(lolo);
           } else {
             cout << "ERRO : Nº DE OPERANDOS ERRADO!" << endl;
             getchar();
@@ -504,6 +663,26 @@ void singlePass(){
   }
   preFile.close();
   symbolTableCheck();
+  
+  cout << "TABEla braba" << endl;
+  for(auto pre : prelinhas){
+    for(auto lala: pre){
+      lala = consulST(lala);
+      cout << lala << " ";
+    }
+  }
+
+  cout << endl;
+
+  //ATUALIZA O PRELINHAS COM OS DADOS DA TABELA DE SIMBOLOS
+  // for (auto sym : symbol_table){
+  //   for(auto li : sym.list){
+
+  //   }
+  // }
+  //GERA O ARQUIVO OBJETO COM OS DADOS DO PRELINHA NOVO
+
+
 }
 
 vector<string> lineParsing(string line, ifstream *inputfile, int *line_count) {
