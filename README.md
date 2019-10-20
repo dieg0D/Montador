@@ -23,17 +23,17 @@ de analise léxica, sintática e semântica e a etapa de geração de código ob
 #### Montador:
 
 - [ ] Leitura
-  - [ ] Receber e abrir o arquivo
+  - [x] Receber e abrir o arquivo
   - [ ] Contador de endereços/posição
 - [ ] Parser
   - [ ] Detecção das áreas de texto e _data_
-  - [ ] Deteção das linhas
-  - [ ] Detecção das instruções
-  - [ ] Detecção dos argumentos das instruções
-  - [ ] Detecção de rótulos (com ou sem enter após)
-- [ ] Tabelas
+  - [x] Deteção das linhas
+  - [x] Detecção das instruções
+  - [x] Detecção dos argumentos das instruções
+  - [x] Detecção de rótulos (com ou sem enter após)
+- [x] Tabelas
   - [x] Tabela de Instruções para consulta
-  - [ ] Montagem da tabela de símbolos
+  - [x] Montagem da tabela de símbolos
 - [ ] Detecção de Erros
   - [ ] Detecção de erros léxicos
   - [ ] Detecção de erros sintáticos
@@ -58,6 +58,7 @@ de analise léxica, sintática e semântica e a etapa de geração de código ob
 
 ```
   Início
+  // DONE
   PASSO_1 // Leitura da linha
     Lê uma linha do arquivo
     Se (Fim do Arquivo)

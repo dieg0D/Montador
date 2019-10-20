@@ -35,13 +35,15 @@ typedef struct symbol {
 vector<instruction> instruction_table; /*Tabela de instruções*/
 vector<directive> directive_table;     /*Tabela de diretivas*/
 vector<symbol> symbol_table;           /*Tabela de símbolos*/
-
+vector<string> assembled_lines;        /*Linhas montadas*/
 // apenas lê do asm
 ifstream asmFile;
 // lê e escreve o pre
 fstream preFile;
 // apenas escreve o obj
 ofstream objFile;
+
+int positionCount = 0;
 
 /*Inicializa a tabela de instruções*/
 void instruction_table_init() {
@@ -162,6 +164,8 @@ void directive_table_init() {
   directive_table.push_back(directive);
 }
 
+
+// SUCESSO
 void symbolTableCheck() {
   // percorre toda a tabela de símbolos e se tiver algum undefined, encerra com
   // erro
@@ -173,19 +177,27 @@ void symbolTableCheck() {
     if (s.defined == false) {
       cout << "[symbolTableCheck] "
            << "ERRO SEMANTICO: Símbolo " << s.name << " não definido" << endl;
+
       getchar();
       exit(-1);
     }
   }
 }
 
-vector<string> tokeniza(string line) {
-  vector<string> tokens;  //
+
+// TODO
+// Funcao que checa se:
+// 1. string tem até 50 de tamanho
+// 2. não começa com número
+// +
+// Adicionar suporte a _ na regex
+
+vector<string> tokeniza(string line){
+  vector<string> tokens; //
   // ler a linha
   smatch sm;
-  regex label_regex(
-      "(?:([[:alnum:]]+):\\s)?([A-Z]+)\\s?(-?(?:[[:alnum:]]|\\+|\\-)+)?(?:,(-?("
-      "?:[[:alnum:]]|\\+|\\-)+))?");
+  regex label_regex("(?:((?:[[:alnum:]]|\\_)+):\\s)?([A-Z]+)\\s?(-?(?:[[:alnum:]]|\\+|\\-|\\_)+)?(?:,(-?(?:[[:alnum:]]|\\+|\\-|\\_)+))?");
+
   regex_match(line, sm, label_regex);
 
   // pegar label
@@ -252,7 +264,63 @@ int lineHasSymbol(string op1, string op2, int lineCount) {
   return resultado;
 }
 
-void singlePass() {
+
+// PASSO_6
+
+int addSymbolToTable(string name, int position){
+  vector<int> lista;
+  lista.push_back(position);
+  symbol s = {name, -1, false, lista};
+  return 0;
+}
+
+// PASSO_7
+int addEntryToSymbolOcurrenceList(string simbolo, int position){
+  for (symbol s : symbol_table){
+    if (s.name == simbolo){
+      s.list.push_back(position);
+      return 0;
+    }
+  }
+  return -1;
+}
+
+int searchSTForSymbol(string simbolo, int pos){
+  for (symbol s : symbol_table){
+    if (s.name == simbolo){
+      cout << "TA NA TABELA JA " << endl;
+      if (!s.defined){// Não ta definido
+        // VAI PARA PASSO_7
+        addEntryToSymbolOcurrenceList(simbolo,pos);
+      }
+      // VAI PARA PASSO_3
+      return 0;
+    }else{
+      cout << "NÃO TA NA TABELA AINDA " << endl;
+      // VAI PRO PASSO_6
+      addSymbolToTable(simbolo, pos);
+    }
+  }
+}
+
+int addOrDefineLabelinTable(string name, int pos){
+  for (symbol s : symbol_table){
+    if (s.name == name){
+      s.value = pos;
+      s.defined = true;
+      return 0;
+    }
+  }
+  vector<int> list;
+  list.push_back(-1);
+  symbol s = {name, pos, true, list};
+  //PASSO 4
+  symbol_table.push_back(s);
+  return 0;
+}
+
+void singlePass(){
+
   string line;
   vector<string> tokens;
   int lineCount = 0, labelDefined = 0;
@@ -273,13 +341,9 @@ void singlePass() {
         exit(-1);
       }
 
-      vector<int> list;
-      list.push_back(-1);
-      symbol s = {tokens.at(0), lineCount, true, list};
-      // PASSO 4
-      symbol_table.push_back(s);
-    } else {
-      // cout << "NÃO TEM LABEL" << endl;
+      addOrDefineLabelinTable(tokens.at(0), positionCount);
+    }else{
+      //cout << "NÃO TEM LABEL" << endl;
     }
     // PASSO 2
     // Confere se o numero de operandos está correto
@@ -298,12 +362,45 @@ void singlePass() {
           val = 1;
         }
         cout << tokens.at(2) << "    " << tokens.at(3) << endl;
-        if (d.operands == val) {
-          lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
-        } else {
+
+        if (d.operands == val){
+          int symbolFlag = lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
+
+          switch (symbolFlag){
+            case 0:
+              // Monta a linha [?]
+              positionCount++;
+              break;
+            case 1:
+              searchSTForSymbol(tokens.at(2), positionCount + 1);
+              positionCount+=2;
+              break;
+            case 2:
+              searchSTForSymbol(tokens.at(3), positionCount + 2);
+              positionCount+=2;
+              break;
+            case 3:
+              searchSTForSymbol(tokens.at(2), positionCount + 1);
+              searchSTForSymbol(tokens.at(3), positionCount + 2);
+              positionCount+=3;
+              break;
+            default:
+              break;
+          }
+
+          // PASSO_3
+          // Montagem da linha
+          string linhaMontada;
+
+          linhaMontada = lineCount + ": " + tokens.at(1) + " \n";
+
+          assembled_lines.push_back(linhaMontada);
+
+        }else {
+
           cout << "ERRO : Nº DE OPERANDOS ERRADO!" << endl;
-          getchar();
           exit(-1);
+          getchar();
         }
         instrType = 1;
         break;
@@ -325,6 +422,7 @@ void singlePass() {
             getchar();
             exit(-1);
           }
+
           break;
         }
       }
@@ -379,7 +477,15 @@ void preProcessor(string fileName) {
       }
     }
   }
+  preFile.close();
+  for (string s : assembled_lines){
+    cout<< "oooopa   " << s;
+  }
+
+  symbolTableCheck();
+
   outfile.close();
+
 }
 
 // Função que abre o arquivo texto que vem da linha de comando
