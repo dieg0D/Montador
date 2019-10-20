@@ -465,15 +465,17 @@ void singlePass(){
               int max = stoi(aaa.c_str());
               for (int n = 0; n < max; n++){
                 lili.push_back("0");
+                positionCount++;
                 }
             }else{
               lili.push_back("0");
+              positionCount++;
               //1espaco
             }
             prelinhas.push_back(lili);
           }else if(tokens.at(1) == "CONST"){
             searchSTForSymbol(tokens.at(0), positionCount + 1);
-            positionCount+=2;
+            positionCount+=1;
             if(tokens.at(2) == ""){
               cout << "ERRO SINTATICO: QUANTIDADE DE OPERANDOS INVÁLIDA!" << endl;
               exit(-1);
@@ -497,51 +499,6 @@ void singlePass(){
             cout << "ERRO SEMANTICO: DIRETIVA INVÁLIDA!" << endl;
             exit(-1);
           }
-
-
-          // int symbolFlag = lineHasSymbol(tokens.at(2), tokens.at(3), lineCount);
-          // // PASSO_3
-          // // Montagem da linha
-
-          // prelinhas.push_back(tokens);
-          
-          // cout << "Estamos no Passo 3" << endl;
-          // for (auto linha : prelinhas){
-          //   for (auto l : linha){
-          //     cout << l << " ";
-          //   }
-          //   cout << endl;
-          // }
-
-          // switch (symbolFlag){
-          //   case 0:
-          //     // Monta a linha [?]
-          //     positionCount++;
-          //     break;
-          //   case 1:
-          //     searchSTForSymbol(tokens.at(2), positionCount + 1);
-          //     positionCount+=2;
-          //     break;
-          //   case 2:
-          //     searchSTForSymbol(tokens.at(3), positionCount + 2);
-          //     positionCount+=2;
-          //     break;
-          //   case 3:
-          //     searchSTForSymbol(tokens.at(2), positionCount + 1);
-          //     searchSTForSymbol(tokens.at(3), positionCount + 2);
-          //     positionCount+=3;
-          //     break;
-          //   default:
-          //     break;
-          // }
-          // cout << "SAIU DO SWITCH" << endl;
-
-          // TRANSFORMAR A STRING BONITA EM NUMERIACA
-          //string linhaMontada;
-          //linhaMontada = lineCount + ": " + tokens.at(1) + " \n";
-
-          //assembled_lines.push_back(linhaMontada);
-
         }else {
 
           cout << "ERRO : Nº DE OPERANDOS ERRADO!" << endl;
